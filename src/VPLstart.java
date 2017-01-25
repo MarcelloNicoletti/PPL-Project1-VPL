@@ -150,6 +150,108 @@ public class VPLstart {
 
         gp = codeEnd + 1;
 
+        boolean halt = false;
+
+        do {
+            // get Operation code
+            int op = mem[ip];
+            ip++;
+
+            // get arguments
+            int a = 0, b = 0, c = 0;
+            int numArgs = numArgs(op);
+            if (numArgs == 1) {
+                a = mem[ip];
+                ip++;
+            } else if (numArgs == 2) {
+                a = mem[ip];
+                ip++;
+                b = mem[ip];
+                ip++;
+            } else if (numArgs == 3) {
+                a = mem[ip];
+                ip++;
+                b = mem[ip];
+                ip++;
+                c = mem[ip];
+                ip++;
+            }
+
+            // do operations
+            if (op == noopCode) {
+                // no op
+            } else if (op == callCode) {
+                // call L
+            } else if (op == passCode) {
+                // pass a
+            } else if (op == allocCode) {
+                // alloc n
+            } else if (op == returnCode) {
+                // return a
+            } else if (op == getRetvalCode) {
+                // getRetVal a
+            } else if (op == jumpCode) {
+                // jump L
+            } else if (op == condJumpCode) {
+                // condJump L a
+            } else if (op == addCode) {
+                // add a b c
+            } else if (op == subCode) {
+                // sub a b c
+            } else if (op == multCode) {
+                // mult a b c
+            } else if (op == divCode) {
+                // div a b c
+            } else if (op == remCode) {
+                // rem a b c
+            } else if (op == equalCode) {
+                // eq a b c
+            } else if (op == notEqualCode) {
+                // neq a b c
+            } else if (op == lessCode) {
+                // lt a b c
+            } else if (op == lessEqualCode) {
+                // lte a b c
+            } else if (op == andCode) {
+                // and a b c
+            } else if (op == orCode) {
+                // or a b c
+            } else if (op == notCode) {
+                // not a b
+            } else if (op == oppCode) {
+                // opp a b
+            } else if (op == litCode) {
+                // lit a n
+            } else if (op == copyCode) {
+                // cp a b
+            } else if (op == getCode) {
+                // get a b c
+            } else if (op == putCode) {
+                // put a b c
+            } else if (op == haltCode) {
+                halt = true;
+            } else if (op == inputCode) {
+                // in a
+            } else if (op == outputCode) {
+                // out a
+            } else if (op == newlineCode) {
+                // nl
+            } else if (op == symbolCode) {
+                // sym a
+            } else if (op == newCode) {
+                // new a b
+            } else if (op == allocGlobalCode) {
+                // galloc n
+            } else if (op == toGlobalCode) {
+                // cp2g n a
+            } else if (op == fromGlobalCode) {
+                // cpFg a n
+            } else if (op == debugCode) {
+                // debug (not in lang spec)
+            }
+
+        } while(!halt);
+
     }// main
 
     // return the number of arguments after the opcode,
