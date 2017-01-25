@@ -250,7 +250,7 @@ public class VPLstart {
                 // debug (not in lang spec)
             }
 
-        } while(!halt);
+        } while (!halt);
 
     }// main
 
