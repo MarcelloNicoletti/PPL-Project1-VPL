@@ -55,6 +55,10 @@ public class VPLstart {
     private static final int fromGlobalCode = 34;
     // debug ops:
     private static final int debugCode = 35;
+
+    // Return info spacer:
+    private static final int retInfo = 2;
+
     static int[] mem = new int[max];
     static int ip, bp, sp, rv, hp, numPassed, gp;
     static String fileName;
@@ -177,6 +181,9 @@ public class VPLstart {
                 ip++;
             }
 
+            // get start of local vars on stack frame.
+            int lvp = bp + retInfo;
+
             // do operations
             if (op == noopCode) {
                 // no op
@@ -196,34 +203,50 @@ public class VPLstart {
                 // condJump L a
             } else if (op == addCode) {
                 // add a b c
+                mem[lvp + a] = mem[lvp + b] + mem[lvp + c];
             } else if (op == subCode) {
                 // sub a b c
+                mem[lvp + a] = mem[lvp + b] - mem[lvp + c];
             } else if (op == multCode) {
                 // mult a b c
+                mem[lvp + a] = mem[lvp + b] * mem[lvp + c];
             } else if (op == divCode) {
                 // div a b c
+                mem[lvp + a] = mem[lvp + b] / mem[lvp + c];
             } else if (op == remCode) {
                 // rem a b c
+                mem[lvp + a] = mem[lvp + b] % mem[lvp + c];
             } else if (op == equalCode) {
                 // eq a b c
+                mem[lvp + a] = (mem[lvp + b] == mem[lvp + c]) ? 1 : 0;
             } else if (op == notEqualCode) {
                 // neq a b c
+                mem[lvp + a] = (mem[lvp + b] != mem[lvp + c]) ? 1 : 0;
             } else if (op == lessCode) {
                 // lt a b c
+                mem[lvp + a] = (mem[lvp + b] < mem[lvp + c]) ? 1 : 0;
             } else if (op == lessEqualCode) {
                 // lte a b c
+                mem[lvp + a] = (mem[lvp + b] <= mem[lvp + c]) ? 1 : 0;
             } else if (op == andCode) {
                 // and a b c
+                mem[lvp + a] = ((mem[lvp + b] != 0) && (mem[lvp + c] != 0)) ? 1 : 0;
             } else if (op == orCode) {
                 // or a b c
+                mem[lvp + a] = ((mem[lvp + b] != 0) || (mem[lvp + c] != 0)) ? 1 : 0;
             } else if (op == notCode) {
                 // not a b
+                mem[lvp + a] = (mem[lvp + b] == 0) ? 1 : 0;
             } else if (op == oppCode) {
                 // opp a b
+                // TODO: Is this correct?
+                mem[lvp + a] = -mem[lvp + b];
             } else if (op == litCode) {
                 // lit a n
+                mem[lvp + a] = b;
             } else if (op == copyCode) {
                 // cp a b
+                mem[lvp + a] = mem[lvp + b];
             } else if (op == getCode) {
                 // get a b c
             } else if (op == putCode) {
@@ -250,6 +273,7 @@ public class VPLstart {
                 // debug (not in lang spec)
             }
 
+            // do more work here
         } while (!halt);
 
     }// main
