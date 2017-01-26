@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 public class VPL {
-    static final int max = 10000;
+    static final int maxIndex = 10000;
     // op to produce comment on a line by itself
-    private static final int noopCode = 0;
+    private static final int noOpCode = 0;
     // ops involved with registers
     private static final int labelCode = 1;
     private static final int callCode = 2;
@@ -16,8 +16,8 @@ public class VPL {
     // use symbolic names for all opcodes:
     private static final int allocCode = 4;
     private static final int returnCode = 5;  // return a means "return and put
-    // copy of value stored in cell a in register rv
-    private static final int getRetvalCode = 6;//op a means "copy rv into cell a"
+    // copy of value stored in cell a in register returnValue
+    private static final int getRetvalCode = 6;//op a means "copy returnValue into cell a"
     private static final int jumpCode = 7;
     private static final int condJumpCode = 8;
     // arithmetic ops
@@ -57,10 +57,10 @@ public class VPL {
     private static final int debugCode = 35;
 
     // Return info spacer:
-    private static final int retInfo = 2;
+    private static final int returnReserved = 2;
 
-    static int[] mem = new int[max];
-    static int ip, bp, sp, rv, hp, numPassed, gp;
+    static int[] mem = new int[maxIndex];
+    static int instructionPointer, basePointer, stackPointer, returnValue, heapPointer, numPassed, globalVarsStart;
     static String fileName;
 
     public static void main (String[] args) throws Exception {
@@ -74,14 +74,14 @@ public class VPL {
         BufferedReader input = new BufferedReader(new FileReader(fileName));
         String line;
         StringTokenizer st;
-        int opcode;
+        int currentOpCode;
 
         ArrayList<IntPair> labels, holes;
         labels = new ArrayList<>();
         holes = new ArrayList<>();
         int label;
 
-        int k = 0;
+        int firstEmptyCell = 0;
         do {
             line = input.readLine();
             System.out.println("parsing line [" + line + "]");
@@ -89,29 +89,29 @@ public class VPL {
                 st = new StringTokenizer(line);
                 if (st.countTokens() > 0) {// have a token, so must be an instruction (as opposed to empty line)
 
-                    opcode = Integer.parseInt(st.nextToken());
+                    currentOpCode = Integer.parseInt(st.nextToken());
 
                     // load the instruction into memory:
 
-                    if (opcode == labelCode) {// note index that comes where label would go
+                    if (currentOpCode == labelCode) {// note index that comes where label would go
                         label = Integer.parseInt(st.nextToken());
-                        labels.add(new IntPair(label, k));
+                        labels.add(new IntPair(label, firstEmptyCell));
                     } else {// opcode actually gets stored
-                        mem[k] = opcode;
-                        ++k;
+                        mem[firstEmptyCell] = currentOpCode;
+                        firstEmptyCell++;
 
-                        if (opcode == callCode || opcode == jumpCode ||
-                                opcode == condJumpCode) {// note the hole immediately after the opcode to be filled in later
+                        if (currentOpCode == callCode || currentOpCode == jumpCode ||
+                                currentOpCode == condJumpCode) {// note the hole immediately after the opcode to be filled in later
                             label = Integer.parseInt(st.nextToken());
-                            mem[k] = label;
-                            holes.add(new IntPair(k, label));
-                            ++k;
+                            mem[firstEmptyCell] = label;
+                            holes.add(new IntPair(firstEmptyCell, label));
+                            firstEmptyCell++;
                         }
 
                         // load correct number of arguments (following label, if any):
-                        for (int j = 0; j < numArgs(opcode); ++j) {
-                            mem[k] = Integer.parseInt(st.nextToken());
-                            ++k;
+                        for (int j = 0; j < numArgs(currentOpCode); j++) {
+                            mem[firstEmptyCell] = Integer.parseInt(st.nextToken());
+                            firstEmptyCell++;
                         }
 
                     }// not a label
@@ -121,14 +121,14 @@ public class VPL {
         } while (line != null);
 
         //System.out.println("after first scan:");
-        //showMem( 0, k-1 );
+        //showMem( 0, firstEmptyCell-1 );
 
         // fill in all the holes:
         int index;
-        for (int m = 0; m < holes.size(); ++m) {
+        for (int m = 0; m < holes.size(); m++) {
             label = holes.get(m).second;
             index = -1;
-            for (int n = 0; n < labels.size(); ++n) {
+            for (int n = 0; n < labels.size(); n++) {
                 if (labels.get(n).first == label) {
                     index = labels.get(n).second;
                 }
@@ -137,156 +137,159 @@ public class VPL {
         }
 
         System.out.println("after replacing labels:");
-        showMem(0, k - 1);
+        showMem(0, firstEmptyCell - 1);
 
         // initialize registers:
-        bp = k;
-        sp = k + 2;
-        ip = 0;
-        rv = -1;
-        hp = max;
+        basePointer = firstEmptyCell;
+        stackPointer = firstEmptyCell + 2;
+        instructionPointer = 0;
+        returnValue = -1;
+        heapPointer = maxIndex;
         numPassed = 0;
 
-        int codeEnd = bp - 1;
+        int endOfCodeBlock = basePointer - 1;
 
         System.out.println("Code is ");
-        showMem(0, codeEnd);
+        showMem(0, endOfCodeBlock);
 
-        gp = codeEnd + 1;
+        globalVarsStart = endOfCodeBlock + 1;
 
-        boolean halt = false;
+        boolean doHalt = false;
 
         do {
             // get Operation code
-            int op = mem[ip];
-            ip++;
+            int opCode = mem[instructionPointer];
+            instructionPointer++;
 
             // get arguments
-            int a = 0, b = 0, c = 0;
-            int numArgs = numArgs(op);
+            int arg0 = 0, arg1 = 0, arg2 = 0;
+            int numArgs = numArgs(opCode);
             if (numArgs == 1) {
-                a = mem[ip];
-                ip++;
+                arg0 = mem[instructionPointer];
+                instructionPointer++;
             } else if (numArgs == 2) {
-                a = mem[ip];
-                ip++;
-                b = mem[ip];
-                ip++;
+                arg0 = mem[instructionPointer];
+                instructionPointer++;
+                arg1 = mem[instructionPointer];
+                instructionPointer++;
             } else if (numArgs == 3) {
-                a = mem[ip];
-                ip++;
-                b = mem[ip];
-                ip++;
-                c = mem[ip];
-                ip++;
+                arg0 = mem[instructionPointer];
+                instructionPointer++;
+                arg1 = mem[instructionPointer];
+                instructionPointer++;
+                arg2 = mem[instructionPointer];
+                instructionPointer++;
             }
 
             // get start of local vars on stack frame.
-            int lvp = bp + retInfo;
+            int localVarsStart = basePointer + returnReserved;
 
             // do operations
-            if (op == callCode) { // 2 (0 is no-op, 1 is preprocessed out)
+            if (opCode == callCode) { // 2 (0 is no-op, 1 is preprocessed out)
                 // call L
-                mem[sp] = bp;
-                mem[sp + 1] = ip;
-                ip = a;
-                bp = sp;
-                sp += numPassed + 2;
+                mem[stackPointer] = basePointer;
+                mem[stackPointer + 1] = instructionPointer;
+                instructionPointer = arg0;
+                basePointer = stackPointer;
+                stackPointer += numPassed + 2;
                 numPassed = 0;
-            } else if (op == passCode) {
+            } else if (opCode == passCode) {
                 // pass a
-                mem[sp + retInfo + numPassed] = mem[lvp + a];
+                mem[stackPointer + returnReserved + numPassed] = mem[localVarsStart + arg0];
                 numPassed++;
-            } else if (op == allocCode) {
+            } else if (opCode == allocCode) {
                 // alloc n
-                sp += a;
-            } else if (op == returnCode) { // 5
+                stackPointer += arg0;
+            } else if (opCode == returnCode) { // 5
                 // return a
-                ip = mem[bp + 1];
-                sp = bp;
-                bp = mem[bp];
-                rv = mem[lvp + a];
-            } else if (op == getRetvalCode) {
+                instructionPointer = mem[basePointer + 1];
+                stackPointer = basePointer;
+                basePointer = mem[basePointer];
+                returnValue = mem[localVarsStart + arg0];
+            } else if (opCode == getRetvalCode) {
                 // getRetVal a
-                mem[lvp + a] = rv;
-            } else if (op == jumpCode) {
+                mem[localVarsStart + arg0] = returnValue;
+            } else if (opCode == jumpCode) {
                 // jump L
-            } else if (op == condJumpCode) {
+            } else if (opCode == condJumpCode) {
                 // condJump L a
-            } else if (op == addCode) {
+            } else if (opCode == addCode) {
                 // add a b c
-                mem[lvp + a] = mem[lvp + b] + mem[lvp + c];
-            } else if (op == subCode) { // 10
+                mem[localVarsStart + arg0] = mem[localVarsStart + arg1] + mem[localVarsStart + arg2];
+            } else if (opCode == subCode) { // 10
                 // sub a b c
-                mem[lvp + a] = mem[lvp + b] - mem[lvp + c];
-            } else if (op == multCode) {
+                mem[localVarsStart + arg0] = mem[localVarsStart + arg1] - mem[localVarsStart + arg2];
+            } else if (opCode == multCode) {
                 // mult a b c
-                mem[lvp + a] = mem[lvp + b] * mem[lvp + c];
-            } else if (op == divCode) {
+                mem[localVarsStart + arg0] = mem[localVarsStart + arg1] * mem[localVarsStart + arg2];
+            } else if (opCode == divCode) {
                 // div a b c
-                mem[lvp + a] = mem[lvp + b] / mem[lvp + c];
-            } else if (op == remCode) {
+                mem[localVarsStart + arg0] = mem[localVarsStart + arg1] / mem[localVarsStart + arg2];
+            } else if (opCode == remCode) {
                 // rem a b c
-                mem[lvp + a] = mem[lvp + b] % mem[lvp + c];
-            } else if (op == equalCode) {
+                mem[localVarsStart + arg0] = mem[localVarsStart + arg1] % mem[localVarsStart + arg2];
+            } else if (opCode == equalCode) {
                 // eq a b c
-                mem[lvp + a] = (mem[lvp + b] == mem[lvp + c]) ? 1 : 0;
-            } else if (op == notEqualCode) { // 15
+                mem[localVarsStart + arg0] = (mem[localVarsStart + arg1] == mem[localVarsStart + arg2]) ? 1 : 0;
+            } else if (opCode == notEqualCode) { // 15
                 // neq a b c
-                mem[lvp + a] = (mem[lvp + b] != mem[lvp + c]) ? 1 : 0;
-            } else if (op == lessCode) {
+                mem[localVarsStart + arg0] = (mem[localVarsStart + arg1] != mem[localVarsStart + arg2]) ? 1 : 0;
+            } else if (opCode == lessCode) {
                 // lt a b c
-                mem[lvp + a] = (mem[lvp + b] < mem[lvp + c]) ? 1 : 0;
-            } else if (op == lessEqualCode) {
+                mem[localVarsStart + arg0] = (mem[localVarsStart + arg1] < mem[localVarsStart + arg2]) ? 1 : 0;
+            } else if (opCode == lessEqualCode) {
                 // lte a b c
-                mem[lvp + a] = (mem[lvp + b] <= mem[lvp + c]) ? 1 : 0;
-            } else if (op == andCode) {
+                mem[localVarsStart + arg0] = (mem[localVarsStart + arg1] <= mem[localVarsStart + arg2]) ? 1 : 0;
+            } else if (opCode == andCode) {
                 // and a b c
-                mem[lvp + a] = ((mem[lvp + b] != 0) && (mem[lvp + c] != 0)) ? 1 : 0;
-            } else if (op == orCode) {
+                mem[localVarsStart + arg0] = ((mem[localVarsStart + arg1] != 0) && (mem[localVarsStart + arg2] != 0)) ? 1 : 0;
+            } else if (opCode == orCode) {
                 // or a b c
-                mem[lvp + a] = ((mem[lvp + b] != 0) || (mem[lvp + c] != 0)) ? 1 : 0;
-            } else if (op == notCode) { // 20
+                mem[localVarsStart + arg0] = ((mem[localVarsStart + arg1] != 0) || (mem[localVarsStart + arg2] != 0)) ? 1 : 0;
+            } else if (opCode == notCode) { // 20
                 // not a b
-                mem[lvp + a] = (mem[lvp + b] == 0) ? 1 : 0;
-            } else if (op == oppCode) {
+                mem[localVarsStart + arg0] = (mem[localVarsStart + arg1] == 0) ? 1 : 0;
+            } else if (opCode == oppCode) {
                 // opp a b
                 // TODO: Is this correct?
-                mem[lvp + a] = -mem[lvp + b];
-            } else if (op == litCode) {
+                mem[localVarsStart + arg0] = -mem[localVarsStart + arg1];
+            } else if (opCode == litCode) {
                 // lit a n
-                mem[lvp + a] = b;
-            } else if (op == copyCode) {
+                mem[localVarsStart + arg0] = arg1;
+            } else if (opCode == copyCode) {
                 // cp a b
-                mem[lvp + a] = mem[lvp + b];
-            } else if (op == getCode) {
+                mem[localVarsStart + arg0] = mem[localVarsStart + arg1];
+            } else if (opCode == getCode) {
                 // get a b c
-            } else if (op == putCode) { // 25
+            } else if (opCode == putCode) { // 25
                 // put a b c
-            } else if (op == haltCode) {
-                halt = true;
-            } else if (op == inputCode) {
+            } else if (opCode == haltCode) {
+                doHalt = true;
+            } else if (opCode == inputCode) {
                 // in a
-            } else if (op == outputCode) {
+            } else if (opCode == outputCode) {
                 // out a
-            } else if (op == newlineCode) {
+            } else if (opCode == newlineCode) {
                 // nl
-            } else if (op == symbolCode) { // 30
+            } else if (opCode == symbolCode) { // 30
                 // sym a
-            } else if (op == newCode) {
+            } else if (opCode == newCode) {
                 // new a b
-            } else if (op == allocGlobalCode) {
+            } else if (opCode == allocGlobalCode) {
                 // galloc n
-            } else if (op == toGlobalCode) {
+            } else if (opCode == toGlobalCode) {
                 // cp2g n a
-            } else if (op == fromGlobalCode) {
+            } else if (opCode == fromGlobalCode) {
                 // cpFg a n
-            } else if (op == debugCode) { // 35
+            } else if (opCode == debugCode) { // 35
                 // debug (not in lang spec)
+            } else {
+                System.out.println("Fatal error: unknown opcode [" + opCode + "]");
+                System.exit(1);
             }
 
             // do more work here
-        } while (!halt);
+        } while (!doHalt);
 
     }// main
 
@@ -294,57 +297,57 @@ public class VPL {
     // except ops that have a label return number of arguments
     // after the label, which always comes immediately after
     // the opcode
-    private static int numArgs (int opcode) {
+    private static int numArgs (int opCode) {
         // highlight specially behaving operations
-        if (opcode == labelCode) {
+        if (opCode == labelCode) {
             return 1;  // not used
-        } else if (opcode == jumpCode) {
+        } else if (opCode == jumpCode) {
             return 0;  // jump label
-        } else if (opcode == condJumpCode) {
+        } else if (opCode == condJumpCode) {
             return 1;  // condJump label expr
-        } else if (opcode == callCode) {
+        } else if (opCode == callCode) {
             return 0;  // call label
         }
 
         // for all other ops, lump by count:
 
-        else if (opcode == noopCode ||
-                opcode == haltCode ||
-                opcode == newlineCode ||
-                opcode == debugCode
+        else if (opCode == noOpCode ||
+                opCode == haltCode ||
+                opCode == newlineCode ||
+                opCode == debugCode
                 ) {
             return 0;  // op
-        } else if (opcode == passCode || opcode == allocCode ||
-                opcode == returnCode || opcode == getRetvalCode ||
-                opcode == inputCode ||
-                opcode == outputCode || opcode == symbolCode ||
-                opcode == allocGlobalCode
+        } else if (opCode == passCode || opCode == allocCode ||
+                opCode == returnCode || opCode == getRetvalCode ||
+                opCode == inputCode ||
+                opCode == outputCode || opCode == symbolCode ||
+                opCode == allocGlobalCode
                 ) {
             return 1;  // op arg1
-        } else if (opcode == notCode || opcode == oppCode ||
-                opcode == litCode || opcode == copyCode || opcode == newCode ||
-                opcode == toGlobalCode || opcode == fromGlobalCode
+        } else if (opCode == notCode || opCode == oppCode ||
+                opCode == litCode || opCode == copyCode || opCode == newCode ||
+                opCode == toGlobalCode || opCode == fromGlobalCode
 
                 ) {
             return 2;  // op arg1 arg2
-        } else if (opcode == addCode || opcode == subCode || opcode == multCode ||
-                opcode == divCode || opcode == remCode || opcode == equalCode ||
-                opcode == notEqualCode || opcode == lessCode ||
-                opcode == lessEqualCode || opcode == andCode ||
-                opcode == orCode || opcode == getCode || opcode == putCode
+        } else if (opCode == addCode || opCode == subCode || opCode == multCode ||
+                opCode == divCode || opCode == remCode || opCode == equalCode ||
+                opCode == notEqualCode || opCode == lessCode ||
+                opCode == lessEqualCode || opCode == andCode ||
+                opCode == orCode || opCode == getCode || opCode == putCode
                 ) {
             return 3;
         } else {
-            System.out.println("Fatal error: unknown opcode [" + opcode + "]");
+            System.out.println("Fatal error: unknown opcode [" + opCode + "]");
             System.exit(1);
             return -1;
         }
 
     }// numArgs
 
-    private static void showMem (int a, int b) {
-        for (int k = a; k <= b; ++k) {
-            System.out.println(k + ": " + mem[k]);
+    private static void showMem (int startIndex, int stopIndex) {
+        for (int currentIndex = startIndex; currentIndex <= stopIndex; currentIndex++) {
+            System.out.println(currentIndex + ": " + mem[currentIndex]);
         }
     }// showMem
 
