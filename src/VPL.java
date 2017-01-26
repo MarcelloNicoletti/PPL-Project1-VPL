@@ -57,7 +57,7 @@ public class VPL {
     private static final int debugCode = 35;
 
     // Return info spacer:
-    private static final int returnReserved = 2;
+    private static final int reservedForReturn = 2;
 
     static int[] mem = new int[maxIndex];
     static int instructionPointer, basePointer, stackPointer, returnValue, heapPointer, numPassed, globalVarsStart;
@@ -141,7 +141,7 @@ public class VPL {
 
         // initialize registers:
         basePointer = firstEmptyCell;
-        stackPointer = firstEmptyCell + 2;
+        stackPointer = basePointer + 2;
         instructionPointer = 0;
         returnValue = -1;
         heapPointer = maxIndex;
@@ -182,7 +182,7 @@ public class VPL {
             }
 
             // get start of local vars on stack frame.
-            int localVarsStart = basePointer + returnReserved;
+            int localVarsStart = basePointer + reservedForReturn;
 
             // do operations
             if (opCode == callCode) { // 2 (0 is no-op, 1 is preprocessed out)
@@ -195,7 +195,7 @@ public class VPL {
                 numPassed = 0;
             } else if (opCode == passCode) {
                 // pass a
-                mem[stackPointer + returnReserved + numPassed] = mem[localVarsStart + arg0];
+                mem[stackPointer + reservedForReturn + numPassed] = mem[localVarsStart + arg0];
                 numPassed++;
             } else if (opCode == allocCode) {
                 // alloc n
