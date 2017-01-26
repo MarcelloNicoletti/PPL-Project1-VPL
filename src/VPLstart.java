@@ -185,18 +185,30 @@ public class VPLstart {
             int lvp = bp + retInfo;
 
             // do operations
-            if (op == noopCode) {
-                // no op
-            } else if (op == callCode) {
+            if (op == callCode) { // 2 (0 is no-op, 1 is preprocessed out)
                 // call L
+                mem[sp] = bp;
+                mem[sp + 1] = ip;
+                ip = a;
+                bp = sp;
+                sp += numPassed + 2;
+                numPassed = 0;
             } else if (op == passCode) {
                 // pass a
+                mem[sp + retInfo + numPassed] = mem[lvp + a];
+                numPassed++;
             } else if (op == allocCode) {
                 // alloc n
-            } else if (op == returnCode) {
+                sp += a;
+            } else if (op == returnCode) { // 5
                 // return a
+                ip = mem[bp + 1];
+                sp = bp;
+                bp = mem[bp];
+                rv = mem[lvp + a];
             } else if (op == getRetvalCode) {
                 // getRetVal a
+                mem[lvp + a] = rv;
             } else if (op == jumpCode) {
                 // jump L
             } else if (op == condJumpCode) {
@@ -204,7 +216,7 @@ public class VPLstart {
             } else if (op == addCode) {
                 // add a b c
                 mem[lvp + a] = mem[lvp + b] + mem[lvp + c];
-            } else if (op == subCode) {
+            } else if (op == subCode) { // 10
                 // sub a b c
                 mem[lvp + a] = mem[lvp + b] - mem[lvp + c];
             } else if (op == multCode) {
@@ -219,7 +231,7 @@ public class VPLstart {
             } else if (op == equalCode) {
                 // eq a b c
                 mem[lvp + a] = (mem[lvp + b] == mem[lvp + c]) ? 1 : 0;
-            } else if (op == notEqualCode) {
+            } else if (op == notEqualCode) { // 15
                 // neq a b c
                 mem[lvp + a] = (mem[lvp + b] != mem[lvp + c]) ? 1 : 0;
             } else if (op == lessCode) {
@@ -234,7 +246,7 @@ public class VPLstart {
             } else if (op == orCode) {
                 // or a b c
                 mem[lvp + a] = ((mem[lvp + b] != 0) || (mem[lvp + c] != 0)) ? 1 : 0;
-            } else if (op == notCode) {
+            } else if (op == notCode) { // 20
                 // not a b
                 mem[lvp + a] = (mem[lvp + b] == 0) ? 1 : 0;
             } else if (op == oppCode) {
@@ -249,7 +261,7 @@ public class VPLstart {
                 mem[lvp + a] = mem[lvp + b];
             } else if (op == getCode) {
                 // get a b c
-            } else if (op == putCode) {
+            } else if (op == putCode) { // 25
                 // put a b c
             } else if (op == haltCode) {
                 halt = true;
@@ -259,7 +271,7 @@ public class VPLstart {
                 // out a
             } else if (op == newlineCode) {
                 // nl
-            } else if (op == symbolCode) {
+            } else if (op == symbolCode) { // 30
                 // sym a
             } else if (op == newCode) {
                 // new a b
@@ -269,7 +281,7 @@ public class VPLstart {
                 // cp2g n a
             } else if (op == fromGlobalCode) {
                 // cpFg a n
-            } else if (op == debugCode) {
+            } else if (op == debugCode) { // 35
                 // debug (not in lang spec)
             }
 
