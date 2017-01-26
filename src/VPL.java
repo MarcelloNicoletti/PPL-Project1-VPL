@@ -54,7 +54,7 @@ public class VPL {
     private static final int toGlobalCode = 33;
     private static final int fromGlobalCode = 34;
     // debug ops:
-    private static final int debugCode = 35;
+    private static final int debugCode = 42;
 
     // Return info spacer:
     private static final int reservedForReturn = 2;
@@ -153,8 +153,10 @@ public class VPL {
         showMem(0, endOfCodeBlock);
 
         globalVarsStart = endOfCodeBlock + 1;
+        int numGlobalVars = 0;
 
         boolean doHalt = false;
+        boolean doDebug = false;
 
         do {
             // get Operation code
@@ -279,16 +281,32 @@ public class VPL {
                 // galloc n
             } else if (opCode == toGlobalCode) {
                 // cp2g n a
-            } else if (opCode == fromGlobalCode) {
+            } else if (opCode == fromGlobalCode) { // 34 - end of spec
                 // cpFg a n
-            } else if (opCode == debugCode) { // 35
+            } else if (opCode == debugCode) { // 42
                 // debug (not in lang spec)
+                doDebug = !doDebug;
             } else {
                 System.out.println("Fatal error: unknown opcode [" + opCode + "]");
                 System.exit(1);
             }
 
             // do more work here
+            if (doDebug) {
+                System.out.print("op:" + opCode);
+                System.out.print("arg0:" + arg0);
+                System.out.print("arg1:" + arg1);
+                System.out.print("arg2:" + arg2);
+                System.out.println();
+                if (numGlobalVars != 0) {
+                    System.out.print("global vars:");
+                    showMem(globalVarsStart, globalVarsStart + numGlobalVars);
+                }
+                System.out.print("local vars:");
+                showMem(basePointer, stackPointer + 2 + numPassed);
+                System.in.read();
+            }
+            opCode = arg0 = arg1 = arg2 = 0; // Reset operation specific
         } while (!doHalt);
 
     }// main
@@ -307,6 +325,8 @@ public class VPL {
             return 1;  // condJump label expr
         } else if (opCode == callCode) {
             return 0;  // call label
+        } else if (opCode == debugCode) {
+            return 0; // debug
         }
 
         // for all other ops, lump by count:
@@ -350,5 +370,4 @@ public class VPL {
             System.out.println(currentIndex + ": " + mem[currentIndex]);
         }
     }// showMem
-
 }// VPL
