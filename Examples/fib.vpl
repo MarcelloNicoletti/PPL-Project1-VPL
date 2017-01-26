@@ -1,0 +1,41 @@
+1 0001		main()
+4 6			locals: 0 = n, 1 = zero, 2 = one, 3 = m, 4 = forty, 5 = a
+27 0		Scanner keys = new Scanner( System.in ); System.out.print("? "); int n = keys.nextInt();
+22 4 40
+31 5 4		int[] a = new int[40];
+22 1 0		int zero = 0;
+22 2 1		int one = 1;
+25 5 1 2	a[zero] = one;
+25 5 2 2	a[one] = one;
+3 0
+3 5
+2 1001
+6 3			int m = f( n, a );
+28 3
+29			System.out.println( m );
+26			end main
+1 1001		private static int f( int n, int[] a ){
+4 9			locals: 0 = n, 1 = a | 2 = r, 3 = s, 4 = k, 5 = t, 6 = one, 7 = two, 8 = a[n], 9 = lit-0, 10 = ltresult
+24 8 1 0
+22 9 0
+17 10 9 8
+8 1002 10	if( a[n] > 0 ){
+23 5 8		    t = a[n];
+7 1003		}
+1 1002		else{
+22 6 1			one = 1;
+22 7 2			two = 2;
+10 4 0 7		k=n-two;
+3 4
+3 1
+2 1001
+6 2				r = f( k, a );
+10 4 4 6		k = k+one;
+3 4
+3 1
+2 1001
+6 3				s = f( k, a );
+9 5 2 3			t = r + s;
+25 1 0 5		a[n] = t;
+1 1003		}
+5 5			return t;

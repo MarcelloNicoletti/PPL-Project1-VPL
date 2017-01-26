@@ -1,0 +1,22 @@
+4 3			init +3 local vars
+27 0 		loc0 = sys.in
+3 0			pass loc0
+2 1001 		call Fac
+6 1			loc1 = ret call Fac()
+28 1		print(loc1)
+29			print(""\n")
+26			HALT
+1 1001 		label Fac {def Fac (int loc0)}
+4 6			init +6 local vars
+22 2 2		loc2 = 2
+22 1 1		loc1 = 1
+16 6 0 2	loc6 = loc0 < loc2
+8 2001 6 	jump to returnLoc1 if loc6 != 0
+10 3 0 1 	loc1 = loc0 - 1
+3 3			pass loc1
+2 1001 		call "Fac"
+6 4			loc4 = ret vall Fac()
+11 5 0 4	loc5 = loc0 * loc4
+5 5			return loc5
+1 2001 		label returnLoc1
+5 1			return loc1
