@@ -4,7 +4,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
 
-public class VPLstart {
+public class VPL {
     static final int max = 10000;
     // op to produce comment on a line by itself
     private static final int noopCode = 0;
@@ -66,7 +66,7 @@ public class VPLstart {
     public static void main (String[] args) throws Exception {
         BufferedReader keys = new BufferedReader(
                 new InputStreamReader(System.in));
-        System.out.print("enter name of file containing VPLstart program: ");
+        System.out.print("enter name of file containing VPL program: ");
         fileName = keys.readLine();
 
         // load the program into the front part of
@@ -348,4 +348,4 @@ public class VPLstart {
         }
     }// showMem
 
-}// VPLstart
+}// VPL
