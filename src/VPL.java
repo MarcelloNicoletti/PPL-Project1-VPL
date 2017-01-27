@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 
 public class VPL {
@@ -200,7 +201,7 @@ public class VPL {
                 }
                 System.out.print("local vars:");
                 showMem(basePointer, stackPointer + 2 + numPassed);
-                System.in.read();
+                System.in.read(); // just waiting for <enter>
             }
 
             // do operations
@@ -238,6 +239,9 @@ public class VPL {
                 instructionPointer = arg0;
             } else if (opCode == condJumpCode) {
                 // condJump L a
+                if (mem[localVarsStart + arg1] != 0) {
+                    instructionPointer = arg0;
+                }
             } else if (opCode == addCode) {
                 // add a b c
                 mem[localVarsStart + arg0] = mem[localVarsStart + arg1] + mem[localVarsStart + arg2];
@@ -285,16 +289,23 @@ public class VPL {
                 mem[localVarsStart + arg0] = mem[localVarsStart + arg1];
             } else if (opCode == getCode) {
                 // get a b c
+                mem[localVarsStart + arg0] = mem[mem[localVarsStart + arg1] + mem[localVarsStart + arg2]];
             } else if (opCode == putCode) { // 25
                 // put a b c
+                mem[mem[localVarsStart + arg0] + mem[localVarsStart + arg1]] = mem[localVarsStart + arg2];
             } else if (opCode == haltCode) {
                 doHalt = true;
             } else if (opCode == inputCode) {
                 // in a
+                System.out.print("? ");
+                Scanner s = new Scanner(System.in);
+                mem[localVarsStart + arg0] = s.nextInt();
             } else if (opCode == outputCode) {
                 // out a
+                System.out.print(mem[localVarsStart + arg0]);
             } else if (opCode == newlineCode) {
                 // nl
+                System.out.println();
             } else if (opCode == symbolCode) { // 30
                 // sym a
                 char symbol;
@@ -318,13 +329,13 @@ public class VPL {
                 doCheckMem = true;
             } else if (opCode == toGlobalCode) {
                 // cp2g n a
-                if (arg0 > numGlobalVars) {
+                if (arg0 > numGlobalVars || arg0 < globalVarsStart) {
                     throwException("Requested global variable out of range.");
                 }
                 mem[globalVarsStart + arg0] = mem[localVarsStart = arg1];
             } else if (opCode == fromGlobalCode) { // 34 - end of spec
                 // cpFg a n
-                if (arg1 > numGlobalVars) {
+                if (arg1 > numGlobalVars || arg1 < globalVarsStart) {
                     throwException("Requested global variable out of range.");
                 }
                 mem[localVarsStart = arg1] = mem[globalVarsStart + arg0];
@@ -342,8 +353,6 @@ public class VPL {
             if (doCheckMem && (stackPointer + reservedForReturn + numPassed > heapPointer)) {
                 throwException("Out of memory");
             }
-
-            opCode = arg0 = arg1 = arg2 = 0; // Reset operation specific
         } while (!doHalt);
 
     }// main
