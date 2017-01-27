@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 public class VPL {
-    static final int maxIndex = 10000;
+    static final int memSize = 10000;
     // op to produce comment on a line by itself
     private static final int noOpCode = 0;
     // ops involved with registers
@@ -59,7 +59,7 @@ public class VPL {
     // Return info spacer:
     private static final int reservedForReturn = 2;
 
-    static int[] mem = new int[maxIndex];
+    static int[] mem = new int[memSize];
     static int instructionPointer, basePointer, stackPointer, returnValue, heapPointer, numPassed, globalVarsStart;
     static String fileName;
 
@@ -144,7 +144,7 @@ public class VPL {
         stackPointer = basePointer + 2;
         instructionPointer = 0;
         returnValue = -1;
-        heapPointer = maxIndex;
+        heapPointer = memSize - 1;
         numPassed = 0;
 
         int endOfCodeBlock = basePointer - 1;
@@ -155,8 +155,12 @@ public class VPL {
         globalVarsStart = endOfCodeBlock + 1;
         int numGlobalVars = 0;
 
+        int localVarsStart = basePointer + reservedForReturn;
+
         boolean doHalt = false;
         boolean doDebug = false;
+        boolean isFirstOp = true;
+        boolean doCheckMem = false;
 
         do {
             // get Operation code
@@ -183,8 +187,6 @@ public class VPL {
                 instructionPointer++;
             }
 
-            // get start of local vars on stack frame.
-            int localVarsStart = basePointer + reservedForReturn;
             // do debugging
             if (doDebug) {
                 System.out.print("op:" + opCode);
@@ -208,26 +210,32 @@ public class VPL {
                 mem[stackPointer + 1] = instructionPointer;
                 instructionPointer = arg0;
                 basePointer = stackPointer;
-                stackPointer += numPassed + 2;
+                stackPointer += numPassed + reservedForReturn;
                 numPassed = 0;
+                localVarsStart = basePointer + reservedForReturn;
+                doCheckMem = true;
             } else if (opCode == passCode) {
                 // pass a
                 mem[stackPointer + reservedForReturn + numPassed] = mem[localVarsStart + arg0];
                 numPassed++;
+                doCheckMem = true;
             } else if (opCode == allocCode) {
                 // alloc n
                 stackPointer += arg0;
+                doCheckMem = true;
             } else if (opCode == returnCode) { // 5
                 // return a
                 instructionPointer = mem[basePointer + 1];
                 stackPointer = basePointer;
                 basePointer = mem[basePointer];
                 returnValue = mem[localVarsStart + arg0];
+                localVarsStart = basePointer + reservedForReturn;
             } else if (opCode == getRetvalCode) {
                 // getRetVal a
                 mem[localVarsStart + arg0] = returnValue;
             } else if (opCode == jumpCode) {
                 // jump L
+                instructionPointer = arg0;
             } else if (opCode == condJumpCode) {
                 // condJump L a
             } else if (opCode == addCode) {
@@ -268,7 +276,6 @@ public class VPL {
                 mem[localVarsStart + arg0] = (mem[localVarsStart + arg1] == 0) ? 1 : 0;
             } else if (opCode == oppCode) {
                 // opp a b
-                // TODO: Is this correct?
                 mem[localVarsStart + arg0] = -mem[localVarsStart + arg1];
             } else if (opCode == litCode) {
                 // lit a n
@@ -290,14 +297,37 @@ public class VPL {
                 // nl
             } else if (opCode == symbolCode) { // 30
                 // sym a
+                char symbol;
+                int temp = mem[localVarsStart + arg0];
+                if (temp < 32 || temp > 126) {
+                    throwException("" + temp + " out of char range. (32-126)");
+                }
+                symbol = (char)temp;
+                System.out.print(symbol);
             } else if (opCode == newCode) {
                 // new a b
+                doCheckMem = true;
             } else if (opCode == allocGlobalCode) {
                 // galloc n
+                if (isFirstOp) {
+                    basePointer += arg0;
+                    numGlobalVars += arg0;
+                } else {
+                    throwException("Global allocation only allowed as first operation");
+                }
+                doCheckMem = true;
             } else if (opCode == toGlobalCode) {
                 // cp2g n a
+                if (arg0 > numGlobalVars) {
+                    throwException("Requested global variable out of range.");
+                }
+                mem[globalVarsStart + arg0] = mem[localVarsStart = arg1];
             } else if (opCode == fromGlobalCode) { // 34 - end of spec
                 // cpFg a n
+                if (arg1 > numGlobalVars) {
+                    throwException("Requested global variable out of range.");
+                }
+                mem[localVarsStart = arg1] = mem[globalVarsStart + arg0];
             } else if (opCode == debugCode) { // 42
                 // debug (not in lang spec)
                 doDebug = !doDebug;
@@ -305,7 +335,14 @@ public class VPL {
                 throwException("Unknown opcode [" + opCode + "]");
             }
 
+            if (isFirstOp && opCode != noOpCode && opCode != allocGlobalCode) {
+                isFirstOp = !isFirstOp;
             }
+
+            if (doCheckMem && (stackPointer + reservedForReturn + numPassed > heapPointer)) {
+                throwException("Out of memory");
+            }
+
             opCode = arg0 = arg1 = arg2 = 0; // Reset operation specific
         } while (!doHalt);
 
