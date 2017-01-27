@@ -185,6 +185,21 @@ public class VPL {
 
             // get start of local vars on stack frame.
             int localVarsStart = basePointer + reservedForReturn;
+            // do debugging
+            if (doDebug) {
+                System.out.print("op:" + opCode);
+                System.out.print("arg0:" + arg0);
+                System.out.print("arg1:" + arg1);
+                System.out.print("arg2:" + arg2);
+                System.out.println();
+                if (numGlobalVars != 0) {
+                    System.out.print("global vars:");
+                    showMem(globalVarsStart, globalVarsStart + numGlobalVars);
+                }
+                System.out.print("local vars:");
+                showMem(basePointer, stackPointer + 2 + numPassed);
+                System.in.read();
+            }
 
             // do operations
             if (opCode == callCode) { // 2 (0 is no-op, 1 is preprocessed out)
@@ -287,24 +302,9 @@ public class VPL {
                 // debug (not in lang spec)
                 doDebug = !doDebug;
             } else {
-                System.out.println("Fatal error: unknown opcode [" + opCode + "]");
-                System.exit(1);
+                throwException("Unknown opcode [" + opCode + "]");
             }
 
-            // do more work here
-            if (doDebug) {
-                System.out.print("op:" + opCode);
-                System.out.print("arg0:" + arg0);
-                System.out.print("arg1:" + arg1);
-                System.out.print("arg2:" + arg2);
-                System.out.println();
-                if (numGlobalVars != 0) {
-                    System.out.print("global vars:");
-                    showMem(globalVarsStart, globalVarsStart + numGlobalVars);
-                }
-                System.out.print("local vars:");
-                showMem(basePointer, stackPointer + 2 + numPassed);
-                System.in.read();
             }
             opCode = arg0 = arg1 = arg2 = 0; // Reset operation specific
         } while (!doHalt);
@@ -358,8 +358,7 @@ public class VPL {
                 ) {
             return 3;
         } else {
-            System.out.println("Fatal error: unknown opcode [" + opCode + "]");
-            System.exit(1);
+            throwException("Unknown opcode [" + opCode + "]");
             return -1;
         }
 
@@ -370,4 +369,9 @@ public class VPL {
             System.out.println(currentIndex + ": " + mem[currentIndex]);
         }
     }// showMem
+
+    private static void throwException(String message) {
+        System.out.println("Fatal Error:" + message);
+        System.exit(1);
+    }
 }// VPL
