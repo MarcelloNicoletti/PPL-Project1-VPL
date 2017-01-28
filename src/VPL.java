@@ -110,7 +110,7 @@ public class VPL {
                         }
 
                         // load correct number of arguments (following label, if any):
-                        for (int j = 0; j < numArgs(currentOpCode); j++) {
+                        for (int j = 0; j < numArgs(currentOpCode, true); j++) {
                             mem[firstEmptyCell] = Integer.parseInt(st.nextToken());
                             firstEmptyCell++;
                         }
@@ -170,7 +170,7 @@ public class VPL {
 
             // get arguments
             int arg0 = 0, arg1 = 0, arg2 = 0;
-            int numArgs = numArgs(opCode);
+            int numArgs = numArgs(opCode, false);
             if (numArgs == 1) {
                 arg0 = mem[instructionPointer];
                 instructionPointer++;
@@ -191,21 +191,23 @@ public class VPL {
             // do debugging
             if (doDebug) {
                 System.out.print("op:" + opCode);
-                System.out.print("arg0:" + arg0);
-                System.out.print("arg1:" + arg1);
-                System.out.print("arg2:" + arg2);
+                System.out.print(", arg0:" + arg0);
+                System.out.print(", arg1:" + arg1);
+                System.out.print(", arg2:" + arg2);
                 System.out.println();
                 if (numGlobalVars != 0) {
-                    System.out.print("global vars:");
+                    System.out.println("global vars:");
                     showMem(globalVarsStart, globalVarsStart + numGlobalVars);
                 }
-                System.out.print("local vars:");
+                System.out.println("local vars:");
                 showMem(basePointer, stackPointer + 2 + numPassed);
                 System.in.read(); // just waiting for <enter>
             }
 
             // do operations
-            if (opCode == callCode) { // 2 (0 is no-op, 1 is preprocessed out)
+            if (opCode == noOpCode) {
+                // do nothing
+            } else if(opCode == callCode) { // 2 (0 is no-op, 1 is preprocessed out)
                 // call L
                 mem[stackPointer] = basePointer;
                 mem[stackPointer + 1] = instructionPointer;
@@ -311,12 +313,14 @@ public class VPL {
                 char symbol;
                 int temp = mem[localVarsStart + arg0];
                 if (temp < 32 || temp > 126) {
-                    throwException("" + temp + " out of char range. (32-126)");
+                    throwException("" + temp + " is out of char range. (32-126)");
                 }
                 symbol = (char)temp;
                 System.out.print(symbol);
             } else if (opCode == newCode) {
                 // new a b
+                heapPointer -= mem[localVarsStart + arg1];
+                mem[localVarsStart + arg0] = heapPointer;
                 doCheckMem = true;
             } else if (opCode == allocGlobalCode) {
                 // galloc n
@@ -346,7 +350,7 @@ public class VPL {
                 throwException("Unknown opcode [" + opCode + "]");
             }
 
-            if (isFirstOp && opCode != noOpCode && opCode != allocGlobalCode) {
+            if (isFirstOp && opCode != noOpCode && opCode != allocGlobalCode && opCode != debugCode) {
                 isFirstOp = !isFirstOp;
             }
 
@@ -361,30 +365,24 @@ public class VPL {
     // except ops that have a label return number of arguments
     // after the label, which always comes immediately after
     // the opcode
-    private static int numArgs (int opCode) {
+    private static int numArgs (int opCode, boolean isPreprocess) {
         // highlight specially behaving operations
-        if (opCode == labelCode) {
-            return 1;  // not used
-        } else if (opCode == jumpCode) {
-            return 0;  // jump label
-        } else if (opCode == condJumpCode) {
-            return 1;  // condJump label expr
-        } else if (opCode == callCode) {
-            return 0;  // call label
-        } else if (opCode == debugCode) {
-            return 0; // debug
+        if (isPreprocess) {
+            if (opCode == labelCode) {
+                return 1;  // not used
+            } else if (opCode == jumpCode) {
+                return 0;  // jump label
+            } else if (opCode == condJumpCode) {
+                return 1;  // condJump label expr
+            } else if (opCode == callCode) {
+                return 0;  // call label
+            }
         }
 
-        // for all other ops, lump by count:
-
-        else if (opCode == noOpCode ||
-                opCode == haltCode ||
-                opCode == newlineCode ||
-                opCode == debugCode
-                ) {
+        if (opCode == noOpCode || opCode == haltCode || opCode == newlineCode || opCode == debugCode) {
             return 0;  // op
-        } else if (opCode == passCode || opCode == allocCode ||
-                opCode == returnCode || opCode == getRetvalCode ||
+        } else if (opCode == callCode || opCode == passCode || opCode == allocCode ||
+                opCode == returnCode || opCode == getRetvalCode || opCode == jumpCode ||
                 opCode == inputCode ||
                 opCode == outputCode || opCode == symbolCode ||
                 opCode == allocGlobalCode
@@ -392,7 +390,7 @@ public class VPL {
             return 1;  // op arg1
         } else if (opCode == notCode || opCode == oppCode ||
                 opCode == litCode || opCode == copyCode || opCode == newCode ||
-                opCode == toGlobalCode || opCode == fromGlobalCode
+                opCode == toGlobalCode || opCode == fromGlobalCode || opCode == condJumpCode
 
                 ) {
             return 2;  // op arg1 arg2
@@ -407,13 +405,13 @@ public class VPL {
             throwException("Unknown opcode [" + opCode + "]");
             return -1;
         }
-
     }// numArgs
 
     private static void showMem (int startIndex, int stopIndex) {
         for (int currentIndex = startIndex; currentIndex <= stopIndex; currentIndex++) {
-            System.out.println(currentIndex + ": " + mem[currentIndex]);
+            System.out.print(currentIndex + ": " + mem[currentIndex] + ", ");
         }
+        System.out.println();
     }// showMem
 
     private static void throwException(String message) {
