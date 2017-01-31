@@ -65,10 +65,14 @@ public class VPL {
     static String fileName;
 
     public static void main (String[] args) throws Exception {
-        BufferedReader keys = new BufferedReader(
-                new InputStreamReader(System.in));
-        System.out.print("enter name of file containing VPL program: ");
-        fileName = keys.readLine();
+        if (args.length == 1) {
+            fileName = args[0];
+        } else {
+            BufferedReader keys = new BufferedReader(
+                    new InputStreamReader(System.in));
+            System.out.print("enter name of file containing VPL program: ");
+            fileName = keys.readLine();
+        }
 
         // load the program into the front part of
         // memory
@@ -85,7 +89,7 @@ public class VPL {
         int firstEmptyCell = 0;
         do {
             line = input.readLine();
-            System.out.println("parsing line [" + line + "]");
+            // System.out.println("parsing line [" + line + "]");
             if (line != null) {// extract any tokens
                 st = new StringTokenizer(line);
                 if (st.countTokens() > 0) {// have a token, so must be an instruction (as opposed to empty line)
@@ -137,8 +141,8 @@ public class VPL {
             mem[holes.get(m).first] = index;
         }
 
-        System.out.println("after replacing labels:");
-        showMem(0, firstEmptyCell - 1);
+        // System.out.println("after replacing labels:");
+        // showMem(0, firstEmptyCell - 1);
 
         // initialize registers:
         basePointer = firstEmptyCell;
@@ -215,7 +219,7 @@ public class VPL {
             // do operations
             if (opCode == noOpCode) {
                 // do nothing
-            } else if(opCode == callCode) { // 2 (0 is no-op, 1 is preprocessed out)
+            } else if (opCode == callCode) { // 2 (0 is no-op, 1 is preprocessed out)
                 // call L
                 mem[stackPointer] = basePointer;
                 mem[stackPointer + 1] = instructionPointer;
@@ -333,7 +337,7 @@ public class VPL {
                 if (temp < 32 || temp > 126) {
                     throwException("" + temp + " is out of char range. (32-126)");
                 }
-                symbol = (char)temp;
+                symbol = (char) temp;
                 System.out.print(symbol);
             } else if (opCode == newCode) {
                 // new a b
@@ -437,8 +441,8 @@ public class VPL {
         System.out.println();
     }// showMem
 
-    private static void throwException(String message) {
-        System.out.println("Fatal Error:" + message);
+    private static void throwException (String message) {
+        System.out.println("Fatal Error: " + message);
         System.exit(1);
     }
 }// VPL
