@@ -188,18 +188,26 @@ public class VPL {
                 instructionPointer++;
             }
 
+            // TODO: Add erasure for memory management ops. No left over data after pop, etc
+
             // do debugging
             if (doDebug) {
-                System.out.print("op:" + opCode);
-                System.out.print(", arg0:" + arg0);
-                System.out.print(", arg1:" + arg1);
-                System.out.print(", arg2:" + arg2);
+                System.out.print("op: " + opCode);
+                if (numArgs > 0) {
+                    System.out.print(", arg0: " + arg0);
+                    if (numArgs > 1) {
+                        System.out.print(", arg1: " + arg1);
+                        if (numArgs > 2) {
+                            System.out.print(", arg2: " + arg2);
+                        }
+                    }
+                }
                 System.out.println();
                 if (numGlobalVars != 0) {
-                    System.out.println("global vars:");
+                    System.out.println("global vars: ");
                     showMem(globalVarsStart, globalVarsStart + numGlobalVars);
                 }
-                System.out.println("local vars:");
+                System.out.println("local vars: ");
                 showMem(basePointer, stackPointer + 2 + numPassed);
                 System.in.read(); // just waiting for <enter>
             }
@@ -304,10 +312,20 @@ public class VPL {
                 mem[localVarsStart + arg0] = s.nextInt();
             } else if (opCode == outputCode) {
                 // out a
+                if (doDebug) {
+                    System.out.print("Console Out: ");
+                }
                 System.out.print(mem[localVarsStart + arg0]);
+                if (doDebug) {
+                    System.out.println();
+                }
             } else if (opCode == newlineCode) {
                 // nl
-                System.out.println();
+                if (doDebug) {
+                    System.out.println("\\n");
+                } else {
+                    System.out.println();
+                }
             } else if (opCode == symbolCode) { // 30
                 // sym a
                 char symbol;
@@ -346,6 +364,11 @@ public class VPL {
             } else if (opCode == debugCode) { // 42
                 // debug (not in lang spec)
                 doDebug = !doDebug;
+                if (doDebug) {
+                    System.out.println("\nBeginning Debug: Press <enter> to step through code.\n");
+                } else {
+                    System.out.println("\nEnding Debug\n");
+                }
             } else {
                 throwException("Unknown opcode [" + opCode + "]");
             }
