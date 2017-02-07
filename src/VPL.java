@@ -54,8 +54,13 @@ public class VPL {
     private static final int allocGlobalCode = 32;
     private static final int toGlobalCode = 33;
     private static final int fromGlobalCode = 34;
+    // Additional ops: added later
+    private static final int indexCode = 42;
+    private static final int storeCode = 43;
+    private static final int retrieveCode = 44;
+    private static final int incrementCode = 56;
     // debug ops:
-    private static final int debugCode = 42;
+    private static final int debugCode = 75;
 
     // Return info spacer:
     private static final int reservedForReturn = 2;
@@ -273,7 +278,7 @@ public class VPL {
                 mem[localVarsStart + arg0] = mem[localVarsStart + arg1] % mem[localVarsStart + arg2];
             } else if (opCode == equalCode) {
                 // eq a b c
-                mem[localVarsStart + arg0] = (mem[localVarsStart + arg1] == mem[localVarsStart + arg2]) ? 1 : 0;
+                mem[localVarsStart + arg0] = mem[localVarsStart + arg1] == mem[localVarsStart + arg2] ? 1 : 0;
             } else if (opCode == notEqualCode) { // 15
                 // neq a b c
                 mem[localVarsStart + arg0] = (mem[localVarsStart + arg1] != mem[localVarsStart + arg2]) ? 1 : 0;
@@ -337,7 +342,7 @@ public class VPL {
                 if (temp < 32 || temp > 126) {
                     throwException("" + temp + " is out of char range. (32-126)");
                 }
-                symbol = (char) temp;
+                symbol = (char)temp;
                 System.out.print(symbol);
             } else if (opCode == newCode) {
                 // new a b
@@ -365,7 +370,16 @@ public class VPL {
                     throwException("Requested global variable out of range.");
                 }
                 mem[localVarsStart = arg1] = mem[globalVarsStart + arg0];
-            } else if (opCode == debugCode) { // 42
+            } else if (opCode == indexCode) { // 42
+                // idx a b
+                mem[localVarsStart + arg0] = localVarsStart + arg1;
+            } else if (opCode == storeCode) {
+                // store a b
+                mem[mem[localVarsStart + arg0]] = mem[localVarsStart + arg1];
+            } else if (opCode == retrieveCode) {
+                // retrieve a b
+                mem[localVarsStart + arg1] = mem[mem[localVarsStart + arg0]];
+            } else if (opCode == debugCode) { // 75
                 // debug (not in lang spec)
                 doDebug = !doDebug;
                 if (doDebug) {
@@ -408,25 +422,16 @@ public class VPL {
 
         if (opCode == noOpCode || opCode == haltCode || opCode == newlineCode || opCode == debugCode) {
             return 0;  // op
-        } else if (opCode == callCode || opCode == passCode || opCode == allocCode ||
-                opCode == returnCode || opCode == getRetvalCode || opCode == jumpCode ||
-                opCode == inputCode ||
-                opCode == outputCode || opCode == symbolCode ||
-                opCode == allocGlobalCode
-                ) {
+        } else if (opCode == callCode || opCode == passCode || opCode == allocCode || opCode == returnCode || opCode == getRetvalCode ||
+                opCode == jumpCode || opCode == inputCode || opCode == outputCode || opCode == symbolCode || opCode == allocGlobalCode) {
             return 1;  // op arg1
-        } else if (opCode == notCode || opCode == oppCode ||
-                opCode == litCode || opCode == copyCode || opCode == newCode ||
-                opCode == toGlobalCode || opCode == fromGlobalCode || opCode == condJumpCode
-
-                ) {
+        } else if (opCode == notCode || opCode == oppCode || opCode == litCode || opCode == copyCode || opCode == newCode ||
+                opCode == toGlobalCode || opCode == fromGlobalCode || opCode == condJumpCode || opCode == indexCode ||
+                opCode == storeCode || opCode == retrieveCode || opCode == incrementCode) {
             return 2;  // op arg1 arg2
-        } else if (opCode == addCode || opCode == subCode || opCode == multCode ||
-                opCode == divCode || opCode == remCode || opCode == equalCode ||
-                opCode == notEqualCode || opCode == lessCode ||
-                opCode == lessEqualCode || opCode == andCode ||
-                opCode == orCode || opCode == getCode || opCode == putCode
-                ) {
+        } else if (opCode == addCode || opCode == subCode || opCode == multCode || opCode == divCode || opCode == remCode ||
+                opCode == equalCode || opCode == notEqualCode || opCode == lessCode || opCode == lessEqualCode || opCode == andCode ||
+                opCode == orCode || opCode == getCode || opCode == putCode) {
             return 3;
         } else {
             throwException("Unknown opcode [" + opCode + "]");
