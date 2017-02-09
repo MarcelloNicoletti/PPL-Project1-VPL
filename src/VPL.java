@@ -154,7 +154,7 @@ public class VPL {
         stackPointer = basePointer + 2;
         instructionPointer = 0;
         returnValue = -1;
-        heapPointer = memSize - 1;
+        heapPointer = memSize;
         numPassed = 0;
 
         int endOfCodeBlock = basePointer - 1;

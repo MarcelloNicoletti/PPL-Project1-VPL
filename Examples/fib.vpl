@@ -1,11 +1,8 @@
 1 0001		main()
 4 7			locals: 0 = n, 1 = zero, 2 = one, 3 = m, 4 = size, 5 = a, 6 = lt-result
 27 0		Scanner keys = new Scanner( System.in ); System.out.print("? "); int n = keys.nextInt();
-22 4 2
-17 6 0 4
-8 0002 6	if (size < n) {
-23 4 0			size = n;
-1 0002		}
+22 4 2		int size = 2;
+9 4 4 0		size += n;
 31 5 4		int[] a = new int[size];
 22 1 0		int zero = 0;
 22 2 1		int one = 1;
