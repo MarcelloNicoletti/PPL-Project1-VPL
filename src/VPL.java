@@ -222,9 +222,7 @@ public class VPL {
             }
 
             // do operations
-            if (opCode == noOpCode) {
-                // do nothing
-            } else if (opCode == callCode) { // 2 (0 is no-op, 1 is preprocessed out)
+            if (opCode == callCode) { // 2 (0 is no-op, 1 is preprocessed out)
                 // call L
                 mem[stackPointer] = basePointer;
                 mem[stackPointer + 1] = instructionPointer;
@@ -363,7 +361,7 @@ public class VPL {
                 if (arg0 > numGlobalVars || arg0 < globalVarsStart) {
                     throwException("Requested global variable out of range.");
                 }
-                mem[globalVarsStart + arg0] = mem[localVarsStart = arg1];
+                mem[globalVarsStart + arg0] = mem[localVarsStart + arg1];
             } else if (opCode == fromGlobalCode) { // 34 - end of spec
                 // cpFg a n
                 if (arg1 > numGlobalVars || arg1 < globalVarsStart) {
@@ -388,7 +386,9 @@ public class VPL {
                     System.out.println("\nEnding Debug\n");
                 }
             } else {
-                throwException("Unknown opcode [" + opCode + "]");
+                if (opCode != 0) {
+                    throwException("Unknown opcode [" + opCode + "]");
+                }
             }
 
             if (isFirstOp && opCode != noOpCode && opCode != allocGlobalCode && opCode != debugCode) {
